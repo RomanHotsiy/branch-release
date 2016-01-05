@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": "index.js",
   "keywords": [
     "git",
     "tag",
@@ -14,5 +15,14 @@
     "branch"
   ],
   "author": "Roman Hotsiy <gotsijroman@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^1.1.1",
+    "del": "^2.2.0",
+    "git-child": "^1.1.0",
+    "jsonfile": "^2.2.3",
+    "packhorse": "^1.2.0",
+    "promised-exec": "^1.0.1",
+    "yargs": "^3.31.0"
+  }
 }
