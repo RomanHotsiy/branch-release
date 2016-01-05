@@ -85,10 +85,13 @@ function buildAndPublish(version) {
   .then((remoteUrl) => {
     let repoRef = remoteUrl.split('@').length > 1 ? remoteUrl.split('@')[1] : remoteUrl;
     log(`running: 'git push --follow-tags'`);
-    return git.push({
-      'follow-tags': true,
-      '_': `"https://${GH_TOKEN}@${repoRef}"`
-    });
+    let pushOptions = {
+      'follow-tags': true
+    };
+    if (GH_REF) {
+      pushOptions['_']: `"https://${GH_TOKEN}@${repoRef}"`
+    }
+    return git.push(pushOptions);
   })
   .finally(() => git.checkout('master'))
 }
