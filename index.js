@@ -79,7 +79,8 @@ function buildAndPublish(version) {
   })
   .then(() => {
     return git.config({
-      'get': 'remote.origin.url'
+      'get':true,
+      '_': 'remote.origin.url'
     });
   })
   .then((remoteUrl) => {
@@ -88,8 +89,8 @@ function buildAndPublish(version) {
     let pushOptions = {
       'follow-tags': true
     };
-    if (GH_REF) {
-      pushOptions['_']: `"https://${GH_TOKEN}@${repoRef}"`
+    if (GH_TOKEN) {
+      pushOptions['_'] = `"https://${GH_TOKEN}@${repoRef}"`
     }
     return git.push(pushOptions);
   })
@@ -102,6 +103,8 @@ function log() {
 
 function fail(err) {
   let message = err.message || err.string;
+  if (GH_TOKEN)
+    message = message.replace(GH_TOKEN, 'xxGH_TOKENxx');
   log(chalk.red('Release failed:'))
   log(chalk.red(message));
   process.exit(1);
