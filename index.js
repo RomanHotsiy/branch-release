@@ -16,9 +16,6 @@ const BUILD_SCRIPT = process.env.BR_BUILD_SCRIPT || argv.s || 'build-dist';
 
 function main() {
   branchRelease()
-  .then(() => {
-    log(chalk.green("Released successfully"))
-  })
   .catch(err => fail(err));
 }
 
@@ -46,6 +43,10 @@ function wasVersionChanged() {
 function buildAndPublish(version) {
   log(`running: 'git checkout -B ${RELEASES_BRANCH}'`);
   return git.checkout({B: RELEASES_BRANCH})
+  .then(() => {
+    log(`running: 'git pull origin ${RELEASES_BRANCH}'`);
+    return git.pull(['origin', RELEASES_BRANCH]);
+  })
   .then(() => {
     log(`running: 'git merge master'`);
     return git.merge('master');
@@ -91,17 +92,24 @@ function buildAndPublish(version) {
     if (repoRef.startsWith('https://'))
       repoRef = repoRef.substring(8);
 
-    log(`running: 'git push --follow-tags'`);
-    let pushOptions = {
-      'follow-tags': true,
-      '_': RELEASES_BRANCH
-    };
+
+    let args = `${RELEASES_BRANCH}:${RELEASES_BRANCH}`;
     if (GH_TOKEN) {
-      pushOptions['_'] = `"https://${GH_TOKEN}@${repoRef}" ` + pushOptions['_'];
+      args = [`https://${GH_TOKEN}@${repoRef}`, args];
     }
-    return git.push(pushOptions);
+    log(`running: 'git push --follow-tags`);
+    return git.push({
+      'follow-tags': true,
+      '_': args
+    });
   })
-  .finally(() => git.checkout('master'))
+  .finally(() => {
+    log('switching back to master branch');
+    return git.checkout('master');
+  })
+  .then(() => {
+    log(chalk.green("Released successfully"))
+  })
 }
 
 function log() {
