@@ -79,8 +79,8 @@ function buildAndPublish(version) {
     return git.commit({m: commitMessage});
   })
   .then(() => {
-    log(`running: 'git tag ${version}'`);
-    return git.tag(version);
+    log(`running: 'git tag v${version}'`);
+    return git.tag('v' + version);
   })
   .then(() => {
     return git.config({
