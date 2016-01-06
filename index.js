@@ -41,6 +41,8 @@ function wasVersionChanged() {
 }
 
 function buildAndPublish(version) {
+  let repoRef;
+
   log(`running: 'git checkout -B ${RELEASES_BRANCH}'`);
   return git.checkout({B: RELEASES_BRANCH})
   .then(() => {
@@ -87,7 +89,7 @@ function buildAndPublish(version) {
     });
   })
   .then((remoteUrl) => {
-    let repoRef = remoteUrl.split('@').length > 1 ? remoteUrl.split('@')[1] : remoteUrl;
+    repoRef = remoteUrl.split('@').length > 1 ? remoteUrl.split('@')[1] : remoteUrl;
     repoRef = repoRef.trim();
     if (repoRef.startsWith('https://'))
       repoRef = repoRef.substring(8);
@@ -97,9 +99,19 @@ function buildAndPublish(version) {
     if (GH_TOKEN) {
       args = [`https://${GH_TOKEN}@${repoRef}`, args];
     }
-    log(`running: 'git push --follow-tags`);
+    log(`running: 'git push'`);
     return git.push({
-      'follow-tags': true,
+      '_': args
+    });
+  })
+  .then(() => {
+    let args = [];
+    if (GH_TOKEN) {
+      args = [`https://${GH_TOKEN}@${repoRef}`];
+    }
+    log(`running: 'git push --tags'`);
+    return git.push({
+      'tags': true,
       '_': args
     });
   })
