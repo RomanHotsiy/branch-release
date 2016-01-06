@@ -2,11 +2,13 @@
 
 'use strict';
 
+const os = require('os');
 const git = require('git-child');
 const del = require('del');
 const chalk = require('chalk');
 const exec = require('promised-exec');
 const argv = require('yargs').argv;
+const semver = require('semver');
 
 const RELEASES_BRANCH = process.env.BR_RELEASES_BRANCH || argv.b || 'releases';
 const GH_TOKEN = process.env.GH_TOKEN || argv.t;
@@ -20,23 +22,32 @@ function main() {
 }
 
 function branchRelease() {
-  return wasVersionChanged().then(versions => {
-    if (versions[0] !== versions[1]) return buildAndPublish(versions[1]);
-    log(chalk.green('Package version was not changed'));
-  });
+  let version;
+  return getCurrentVersion()
+  .then(_version => {
+    version = _version;
+    return checkVersionIsTagged(version);
+  })
+  .then(tagged => {
+    if (!tagged) return buildAndPublish(version);
+    log(chalk.green(`Version ${version} is already released. Exiting...`));
+  })
 }
 
-function wasVersionChanged() {
-  let version;
+function getCurrentVersion() {
   return git.checkout('master')
   .then(() => git.show('HEAD:package.json'))
   .then(contents => {
-    version = JSON.parse(contents).version;
-    return git.show('HEAD^:package.json')
+    let version = semver.clean(JSON.parse(contents).version);
+    return version;
   })
-  .then(contents => {
-    const prevVersion = JSON.parse(contents).version;
-    return [prevVersion, version];
+}
+
+function checkVersionIsTagged(version) {
+  return git.tag({l: true})
+  .then(tags => {
+    let tagsSet = new Set(tags.trim().split(os.EOL).map(tag => semver.clean(tag)));
+    return tagsSet.has(version);
   })
 }
 

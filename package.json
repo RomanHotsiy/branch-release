@@ -1,14 +1,14 @@
 {
   "name": "branch-release",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Build and tag package realease on a separate branch",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/RomanGotsiy/branch-release.git"
+    "type": "git",
+    "url": "https://github.com/RomanGotsiy/branch-release.git"
   },
   "bin": "index.js",
   "keywords": [
@@ -25,6 +25,7 @@
     "del": "^2.2.0",
     "git-child": "^1.1.0",
     "promised-exec": "^1.0.1",
+    "semver": "^5.1.0",
     "yargs": "^3.31.0"
   }
 }

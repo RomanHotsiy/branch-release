@@ -9,7 +9,7 @@ A whole lot of front-end packages keep their dist files directly in the master b
 ## How does it work?
 It uses special `releases` branch and keep all the built files there and tag it as well.
 It looks like this:
-- check if package version was changed by latest commit and if wasn't - exit
+- check if current version (from `package.json`) is already tagged (released)
 - `git checkout -B releases`
 - `git merge master` (this merge won't produce any conflicts as on master branch you change only src files and on releases only dist files are changed)
 - Building dist files: `npm run-task build-dist`
