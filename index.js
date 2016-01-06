@@ -44,24 +44,24 @@ function getCurrentVersion() {
 }
 
 function checkVersionIsTagged(version) {
-  return git.tag({l: true})
+  return git.lsRemote({t: 'origin'})
   .then(tags => {
-    let tagsSet = new Set(tags.trim().split(os.EOL).map(tag => semver.clean(tag)));
-    return tagsSet.has(version);
+    let re = new RegExp('\\D' + version.replace(/\./g, '\\.') + '$', 'm');
+    return re.test(tags);
   })
 }
 
 function checkoutAndPull() {
   log('check if remote branch exists');
-  return git.branch({
-    r: true,
-    a: true
+  return git.lsRemote({
+    h: 'origin'
   })
   .then((branches) => {
     log(`running: 'git checkout -B ${RELEASES_BRANCH}'`);
     let checkoutPromise = git.checkout({B: RELEASES_BRANCH});
 
-    if (branches.indexOf(`origin/${RELEASES_BRANCH}`) > -1) {
+    let re = new RegExp(`heads\\/${RELEASES_BRANCH}$`, 'm');
+    if (re.test(branches)) {
       return checkoutPromise.then(() => {
         log(`running: 'git pull origin ${RELEASES_BRANCH}'`);
         return git.pull(['origin', RELEASES_BRANCH]);
@@ -121,16 +121,15 @@ function buildAndPublish(version) {
     if (repoRef.startsWith('https://'))
       repoRef = repoRef.substring(8);
 
+    repoRef = repoRef.replace(':', '/');
     let remote = 'origin';
     if (GH_TOKEN) {
       remote = `https://${GH_TOKEN}@${repoRef}`;
     }
     let args = [remote, `${RELEASES_BRANCH}:${RELEASES_BRANCH}`];
 
-    log(`running: 'git push'`);
-    return git.push({
-      '_': args
-    });
+    log(`running: 'git push ${remote.replace(GH_TOKEN, 'xxGH_TOKENxx')} ${args[1]}`);
+    return git.push(args);
   })
   .then(() => {
     let args = [];
@@ -159,7 +158,7 @@ function log() {
 function fail(err) {
   let message = err.message || err.string;
   if (GH_TOKEN)
-    message = message.replace(GH_TOKEN, 'xxGH_TOKENxx');
+    message = message.replace(new RegExp(GH_TOKEN, 'g'), 'xxGH_TOKENxx');
   log(chalk.red('Release failed:'))
   log(chalk.red(message));
   process.exit(1);
