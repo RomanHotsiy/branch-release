@@ -51,15 +51,31 @@ function checkVersionIsTagged(version) {
   })
 }
 
+function checkoutAndPull() {
+  log('check if remote branch exists');
+  return git.branch({
+    r: true,
+    a: true
+  })
+  .then((branches) => {
+    log(`running: 'git checkout -B ${RELEASES_BRANCH}'`);
+    let checkoutPromise = git.checkout({B: RELEASES_BRANCH});
+
+    if (branches.indexOf(`origin/${RELEASES_BRANCH}`) > -1) {
+      return checkoutPromise.then(() => {
+        log(`running: 'git pull origin ${RELEASES_BRANCH}'`);
+        return git.pull(['origin', RELEASES_BRANCH]);
+      });
+    } else {
+      return checkoutPromise;
+    }
+  });
+}
+
 function buildAndPublish(version) {
   let repoRef;
 
-  log(`running: 'git checkout -B ${RELEASES_BRANCH}'`);
-  return git.checkout({B: RELEASES_BRANCH})
-  .then(() => {
-    log(`running: 'git pull origin ${RELEASES_BRANCH}'`);
-    return git.pull(['origin', RELEASES_BRANCH]);
-  })
+  return checkoutAndPull()
   .then(() => {
     log(`running: 'git merge master'`);
     return git.merge('master');
@@ -105,11 +121,12 @@ function buildAndPublish(version) {
     if (repoRef.startsWith('https://'))
       repoRef = repoRef.substring(8);
 
-
-    let args = `${RELEASES_BRANCH}:${RELEASES_BRANCH}`;
+    let remote = 'origin';
     if (GH_TOKEN) {
-      args = [`https://${GH_TOKEN}@${repoRef}`, args];
+      remote = `https://${GH_TOKEN}@${repoRef}`;
     }
+    let args = [remote, `${RELEASES_BRANCH}:${RELEASES_BRANCH}`];
+
     log(`running: 'git push'`);
     return git.push({
       '_': args
