@@ -2,7 +2,7 @@ branch-release
 =====
 Build and tag package release on a separate branch
 
-A whole lot of front-end packages keep their dist files directly in the master branch. This is useful for package managers that rely on tags (e.g. Bower). Are you tired of this pollution? Then this tool is for you!
+A whole lot of front-end packages keep their dist files directly in the master branch. This is required for package managers that rely on tags (e.g. Bower). Are you tired of this pollution? Then this tool is for you!
 
 ![Carl and Rick about storing dist in master](http://i.imgur.com/YXgba3U.jpg "Carl and Rick about storing dist in master")
 
@@ -24,7 +24,7 @@ Local installation:
 
     npm install branch-release --save-dev
 
-Global installation (not recommended):
+Global installation (**not recommended**):
 
     npm install branch-release -g
 
