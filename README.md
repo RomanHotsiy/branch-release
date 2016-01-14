@@ -4,7 +4,8 @@ branch-release
 
 Build and tag package release on a separate branch
 
-A whole lot of front-end packages keep their dist files directly in the master branch. This is required for package managers that rely on tags (e.g. Bower). Are you tired of this pollution? Then this tool is for you!
+A whole lot of front-end packages keep their dist files directly in the master branch. This is required for package managers that rely on tags (e.g. Bower).
+Are you tired of this pollution? Then this tool is for you!
 
 ![Carl and Rick about storing dist in master](http://i.imgur.com/YXgba3U.jpg "Carl and Rick about storing dist in master")
 
@@ -14,17 +15,16 @@ It looks like this:
 - check if current version (from `package.json`) was not tagged (released)
 - `git checkout -B releases`
 - `git merge master` (this merge won't produce any conflicts as on master branch you change only src files and on releases only dist files are changed)
-- Building dist files: `npm run-task build-dist`
+- Building dist files: `npm run build-dist`
 - `git add dist -f`
 - `git commit -m "Release <version>"`
 - `git tag <version>`
 - `git push --follow-tags`
 - `git checkout master`
 
-## Requirements
- - Node v4+
-
 ## Installation
+_Requirements_: Node v4+
+
 Local installation:
 
     npm install branch-release --save-dev
@@ -52,8 +52,9 @@ But I recommend local installation and using it via npm scripts (npm bin directo
 
 and then:
 
-    npm run-script release-to-branch
+    npm run release-to-branch
 
+**All you need to do** is change `version` field in `package.json`, commit it and run this tool (ideally it should be run by [TravisCI](#using-with-travisci))
 
 ## Configuration
 
@@ -102,11 +103,31 @@ deploy:
 ```
 
 **WARNING**: don't specify `GH_TOKEN` in cleartext, use [travis encrypted keys](https://docs.travis-ci.com/user/encryption-keys/) instead.
+Don't worry, `GH_TOKEN` won't be output to the public logs. It will be replaced with xxGH_TOKENxx
 
 If you omit `skip_cleanup` field you should do `npm install` before run branch-release:
 ```yml
 script: npm install && npm run release-to-branch
 ```
 I recommend to use **machine user account** to push commits from TravisCI to Github. It is totally OK according to [Github guides](https://developer.github.com/guides/managing-deploy-keys/#machine-users)
+
+#### Publish npm package
+You can publish npm package automatically as well. For that you need to setup TravisCI deploy to npm and bind it to git tags:
+
+```yml
+deploy:
+  - skip_cleanup: true
+    provider: script
+    script: npm run branch-release
+    on:
+      branch: master
+  - provider: npm
+    skip_cleanup: true
+    api_key: <your api key>
+    on:
+      tags: true
+```
+**WARNING**: don't specify `api_key` in cleartext, use [travis encrypted keys](https://docs.travis-ci.com/user/encryption-keys/) instead.
+You can check out this [real-life example](https://github.com/Rebilly/ReDoc/blob/master/.travis.yml) of this approach for more details.
 ## Credits
 Special thanks goes to [@IvanGoncharov](https://github.com/IvanGoncharov) for the idea and motivation :smile:
