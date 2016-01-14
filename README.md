@@ -105,8 +105,8 @@ deploy:
 
 If you omit `skip_cleanup` field you should do `npm install` before run branch-release:
 ```yml
-script: npm install && npm run branch-release
+script: npm install && npm run release-to-branch
 ```
-I recommend to use **machine user account** to push commits from TravisCI to Github. It's totally OK according to [Github guides](https://developer.github.com/guides/managing-deploy-keys/#machine-users)
+I recommend to use **machine user account** to push commits from TravisCI to Github. It is totally OK according to [Github guides](https://developer.github.com/guides/managing-deploy-keys/#machine-users)
 ## Credits
 Special thanks goes to [@IvanGoncharov](https://github.com/IvanGoncharov) for the idea and motivation :smile:
