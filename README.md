@@ -19,6 +19,9 @@ It looks like this:
 - `git push --follow-tags`
 - `git checkout master`
 
+## Requirements
+ - Node v4+
+
 ## Installation
 Local installation:
 
@@ -60,5 +63,48 @@ You can configure this tool via both command-line options or environment variabl
 - `-s <BUILD_SCRIPT>` or `BR_BUILD_SCRIPT` env variable: specifies npm script to be run for building dist files. **Default**: `build-dist`
 - `-m <COMMIT_MESSAGE>` or `BR_COMMIT_MESSAGE` env variable: specifies commit message. You can use `%ver%` placeholder which will be replaced with actual package version from `package.json`. **Default**: `'Release v%ver%'`
 
+## Using with TravisCI
+This tool works best with [TravisCI](https://travis-ci.org).
+The sample repo that uses this tool with TravisCI: [branch-release-demo](https://github.com/RomanGotsiy/branch-release-demo)
+
+Here is the example configuration:
+
+_package.json_
+```json
+...
+"scripts": {
+    "test": "./test",
+    "build-dist": "./build",
+    "release-to-branch": "branch-release"
+  },
+...
+```
+`./test` and `./build` are here just for example. Use your actual routines.
+
+_.travis.yml_
+```yml
+language: node_js
+node_js:
+- '4.0'
+env:
+  global:
+  - GIT_AUTHOR_EMAIL: bot-account@users.noreply.github.com
+  - GIT_AUTHOR_NAME: MyRepoTravisBot
+  - GH_TOKEN: <your github token>
+deploy:
+  skip_cleanup: true
+  provider: script
+  script: npm run release-to-branch
+  on:
+    branch: master
+```
+
+**WARNING**: don't specify `GH_TOKEN` in cleartext, use [travis encrypted keys](https://docs.travis-ci.com/user/encryption-keys/) instead.
+
+If you omit `skip_cleanup` field you should do `npm install` before run branch-release:
+```yml
+script: npm install && npm run branch-release
+```
+I recommend to use **machine user account** to push commits from TravisCI to Github. It's totally OK according to [Github guides](https://developer.github.com/guides/managing-deploy-keys/#machine-users)
 ## Credits
 Special thanks goes to [@IvanGoncharov](https://github.com/IvanGoncharov) for the idea and motivation :smile:
