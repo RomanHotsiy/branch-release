@@ -20,6 +20,9 @@
   ],
   "author": "Roman Hotsiy <gotsijroman@gmail.com>",
   "license": "MIT",
+  "engines": {
+    "node": ">=4.0.0"
+  },
   "dependencies": {
     "chalk": "^1.1.1",
     "del": "^2.2.0",
