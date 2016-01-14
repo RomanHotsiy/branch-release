@@ -1,5 +1,7 @@
 branch-release
 =====
+[![npm](https://img.shields.io/npm/v/branch-release.svg)](https://www.npmjs.com/package/branch-release) [![node](https://img.shields.io/node/v/branch-release.svg)](https://www.npmjs.com/package/branch-release) [![Dependencies](https://david-dm.org/RomanGotsiy/branch-release.svg)](https://david-dm.org/RomanGotsiy/branch-release) [![npm](https://img.shields.io/npm/l/branch-release.svg)](https://github.com/RomanGotsiy/branch-release/blob/master/LICENSE)
+
 Build and tag package release on a separate branch
 
 A whole lot of front-end packages keep their dist files directly in the master branch. This is required for package managers that rely on tags (e.g. Bower). Are you tired of this pollution? Then this tool is for you!
@@ -9,7 +11,7 @@ A whole lot of front-end packages keep their dist files directly in the master b
 ## How does it work?
 It uses special `releases` branch and keep all the built files there and tag it as well.
 It looks like this:
-- check if current version (from `package.json`) is already tagged (released)
+- check if current version (from `package.json`) was not tagged (released)
 - `git checkout -B releases`
 - `git merge master` (this merge won't produce any conflicts as on master branch you change only src files and on releases only dist files are changed)
 - Building dist files: `npm run-task build-dist`
