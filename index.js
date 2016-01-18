@@ -57,17 +57,16 @@ function checkoutAndPull() {
     h: 'origin'
   })
   .then((branches) => {
-    log(`running: 'git checkout -B ${RELEASES_BRANCH}'`);
-    let checkoutPromise = git.checkout({B: RELEASES_BRANCH});
-
     let re = new RegExp(`heads\\/${RELEASES_BRANCH}$`, 'm');
     if (re.test(branches)) {
-      return checkoutPromise.then(() => {
+      log(`running: 'git checkout ${RELEASES_BRANCH}'`);
+      return git.checkout(RELEASES_BRANCH).then(() => {
         log(`running: 'git pull origin ${RELEASES_BRANCH}'`);
         return git.pull(['origin', RELEASES_BRANCH]);
       });
     } else {
-      return checkoutPromise;
+      log(`running: 'git checkout -b ${RELEASES_BRANCH}'`);
+      return git.checkout({b: RELEASES_BRANCH});
     }
   });
 }
