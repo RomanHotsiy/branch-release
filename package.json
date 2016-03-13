@@ -1,6 +1,6 @@
 {
   "name": "branch-release",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Build and tag package realease on a separate branch",
   "main": "index.js",
   "scripts": {

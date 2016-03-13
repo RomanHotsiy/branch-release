@@ -60,7 +60,12 @@ function checkoutAndPull() {
     let re = new RegExp(`heads\\/${RELEASES_BRANCH}$`, 'm');
     if (re.test(branches)) {
       log(`running: 'git fetch origin ${RELEASES_BRANCH}:${RELEASES_BRANCH}'`);
-      return git.fetch(['origin', `${RELEASES_BRANCH}:${RELEASES_BRANCH}`]).then(() => {
+      return git.fetch(['origin', `${RELEASES_BRANCH}:${RELEASES_BRANCH}`])
+      .then(() => {
+        log('Clearing dist folder');
+        return del([ DIST_DIR + '/**/*' ]);
+      })
+      .then(() => {
         log(`running: 'git checkout ${RELEASES_BRANCH}'`);
         return git.checkout(RELEASES_BRANCH);
       });
@@ -68,7 +73,7 @@ function checkoutAndPull() {
       log(`running: 'git checkout -b ${RELEASES_BRANCH}'`);
       return git.checkout({b: RELEASES_BRANCH});
     }
-  });
+  })
 }
 
 function buildAndPublish(version) {
