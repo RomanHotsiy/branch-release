@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
 'use strict';
-
-const os = require('os');
-const git = require('git-child');
-const del = require('del');
+require('shelljs/global');
 const chalk = require('chalk');
-const exec = require('promised-exec');
 const argv = require('yargs').argv;
 const semver = require('semver');
+const GitUrlParse = require("git-url-parse");
 
 const RELEASES_BRANCH = process.env.BR_RELEASES_BRANCH || argv.b || 'releases';
 const GH_TOKEN = process.env.GH_TOKEN || argv.t;
@@ -16,156 +13,104 @@ const DIST_DIR = process.env.BR_DIST_DIR || argv.d || 'dist';
 const COMMIT_MESSAGE = process.env.BR_DIST_DIR || argv.m || 'Release v%ver%';
 const BUILD_SCRIPT = process.env.BR_BUILD_SCRIPT || argv.s || 'build-dist';
 
+set('-v');
+set('-e');
+
 function main() {
-  branchRelease()
-  .catch(err => fail(err));
+  branchRelease();
 }
 
 function branchRelease() {
-  let version;
-  return getCurrentVersion()
-  .then(_version => {
-    version = _version;
-    return checkVersionIsTagged(version);
-  })
-  .then(tagged => {
-    if (!tagged) return buildAndPublish(version);
-    log(chalk.green(`Version ${version} is already released. Exiting...`));
-  })
+  exec('git stash');
+  let version = getCurrentVersion();
+  if (checkVersionIsTagged(version)) {
+    console.log(chalk.green(`Version ${version} is already released. Exiting...`));
+    return;
+  }
+
+  try {
+    unshallow();
+    buildAndPublish(version);
+    console.log(chalk.green(`Released successfully...`));
+  } catch(e) {
+    console.log(chalk.red(safeOutput(e.message)));
+    switchBack();
+    process.exit(1);
+  }
 }
 
 function getCurrentVersion() {
-  return git.checkout('master')
-  .then(() => git.show('HEAD:package.json'))
-  .then(contents => {
-    let version = semver.clean(JSON.parse(contents).version);
-    return version;
-  })
+  let manifest = JSON.parse(exec('git show HEAD:package.json', {silent: true}).stdout);
+  return semver.clean(manifest.version);
+}
+
+function switchBack() {
+  exec('git reset --hard');
+  exec('git checkout @{-1}');
+  exec('git stash pop');
 }
 
 function checkVersionIsTagged(version) {
-  return git.lsRemote({t: 'origin'})
-  .then(tags => {
-    let re = new RegExp('\\D' + version.replace(/\./g, '\\.') + '$', 'm');
-    return re.test(tags);
-  })
+  let tags = exec('git ls-remote -t origin', {silent: true}).stdout;
+  let re = new RegExp('\\D' + version.replace(/\./g, '\\.') + '$', 'm');
+  return re.test(tags);
+}
+
+function unshallow() {
+  set('+e');
+  exec('git fetch --unshallow');
+  set('-e');
 }
 
 function checkoutAndPull() {
-  log('check if remote branch exists');
-  return git.lsRemote({
-    h: 'origin'
-  })
-  .then((branches) => {
-    let re = new RegExp(`heads\\/${RELEASES_BRANCH}$`, 'm');
-    if (re.test(branches)) {
-      log(`running: 'git fetch origin ${RELEASES_BRANCH}:${RELEASES_BRANCH}'`);
-      return git.fetch(['origin', `${RELEASES_BRANCH}:${RELEASES_BRANCH}`])
-      .then(() => {
-        log('Clearing dist folder');
-        return del([ DIST_DIR + '/**/*' ]);
-      })
-      .then(() => {
-        log(`running: 'git checkout ${RELEASES_BRANCH}'`);
-        return git.checkout(RELEASES_BRANCH);
-      });
-    } else {
-      log(`running: 'git checkout -b ${RELEASES_BRANCH}'`);
-      return git.checkout({b: RELEASES_BRANCH});
-    }
-  })
+  rm('-rf', DIST_DIR);
+  var branches = exec('git ls-remote -h origin', {silent: true}).stdout;
+  let re = new RegExp(`heads\\/${RELEASES_BRANCH}$`, 'm');
+  if (re.test(branches)) {
+    exec(`git fetch -f origin ${RELEASES_BRANCH}:${RELEASES_BRANCH}`);
+    exec(`git checkout ${RELEASES_BRANCH}`);
+  } else {
+    exec(`git checkout -b ${RELEASES_BRANCH}`);
+  }
 }
 
 function buildAndPublish(version) {
-  let repoRef;
-
-  return checkoutAndPull()
-  .then(() => {
-    log(`running: 'git merge master'`);
-    return git.merge('master');
-  })
-  .then(() => {
-    log('Clearing dist folder');
-    return del([ DIST_DIR + '/**/*' ]);
-  })
-  .then(() => {
-    let buildCommand = `npm run-script ${BUILD_SCRIPT}`;
-    log(`running: '${buildCommand}'`);
-    return exec(buildCommand);
-  })
-  .then(() => {
-    log(`running: 'git add .'`);
-    return git.add('.');
-  })
-  .then(() => {
-    log(`running: 'git add ${DIST_DIR} -f'`);
-    return git.add({
-      _: DIST_DIR,
-      f: true
-    });
-  })
-  .then(() => {
-    const commitMessage = COMMIT_MESSAGE.replace('%ver%', version);
-    log(`running: 'git commit -m ${commitMessage}'`);
-    return git.commit({m: commitMessage});
-  })
-  .then(() => {
-    log(`running: 'git tag v${version}'`);
-    return git.tag('v' + version);
-  })
-  .then(() => {
-    return git.config({
-      'get':true,
-      '_': 'remote.origin.url'
-    });
-  })
-  .then((remoteUrl) => {
-    repoRef = remoteUrl.split('@').length > 1 ? remoteUrl.split('@')[1] : remoteUrl;
-    repoRef = repoRef.trim();
-    if (repoRef.startsWith('https://'))
-      repoRef = repoRef.substring(8);
-
-    repoRef = repoRef.replace(':', '/');
-    let remote = 'origin';
-    if (GH_TOKEN) {
-      remote = `https://${GH_TOKEN}@${repoRef}`;
-    }
-    let args = [remote, `${RELEASES_BRANCH}:${RELEASES_BRANCH}`];
-
-    log(`running: 'git push ${remote.replace(GH_TOKEN, 'xxGH_TOKENxx')} ${args[1]}`);
-    return git.push(args);
-  })
-  .then(() => {
-    let args = [];
-    if (GH_TOKEN) {
-      args = [`https://${GH_TOKEN}@${repoRef}`];
-    }
-    log(`running: 'git push --tags'`);
-    return git.push({
-      'tags': true,
-      '_': args
-    });
-  })
-  .finally(() => {
-    log('switching back to master branch');
-    return git.checkout('master');
-  })
-  .then(() => {
-    log(chalk.green("Released successfully"))
-  })
+  checkoutAndPull();
+  exec('git merge @{-1}');
+  exec(`npm run-script ${BUILD_SCRIPT}`);
+  exec(`git add ${DIST_DIR} -f`);
+  const commitMessage = COMMIT_MESSAGE.replace('%ver%', version);
+  exec(`git commit -m "${commitMessage}"`);
+  exec(`git tag v${version}`);
+  let remote = 'origin';
+  if (GH_TOKEN) {
+    let remoteUrl = exec('git config --get remote.origin.url', {silent: true}).stdout.trim();
+    let remoteObj = GitUrlParse(remoteUrl);
+    remoteObj.token = GH_TOKEN;
+    remote = GitUrlParse.stringify(remoteObj, 'https');
+  }
+  safeExec(`git push ${remote} ${RELEASES_BRANCH}:${RELEASES_BRANCH}`);
+  safeExec(`git push ${remote} --tags`);
 }
 
-function log() {
-  console.log.apply(console, arguments);
+function safeOutput(str) {
+  return GH_TOKEN ? str.replace(new RegExp(GH_TOKEN, 'g'), 'xxPASSxx') : str;
 }
 
-function fail(err) {
-  let message = err.message || err.string;
-  if (GH_TOKEN)
-    message = message.replace(new RegExp(GH_TOKEN, 'g'), 'xxGH_TOKENxx');
-  log(chalk.red('Release failed:'))
-  log(chalk.red(message));
-  process.exit(1);
+function safeExec(command) {
+  set('+v');
+  set('+e');
+  console.log(safeOutput(command));
+  var res = exec(command, {silent:true});
+  if (res.code == 0) {
+    console.log(safeOutput(res.stdout || res.stderr));
+  } else {
+    console.log('push failed');
+    throw Error(res.stderr);
+  }
+  set('-e');
+  set('-v');
+  return res;
 }
 
 if (require.main === module) {

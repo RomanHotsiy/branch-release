@@ -1,6 +1,6 @@
 {
   "name": "branch-release",
-  "version": "0.3.2",
+  "version": "1.0.0",
   "description": "Build and tag package realease on a separate branch",
   "main": "index.js",
   "scripts": {
@@ -29,6 +29,10 @@
     "git-child": "^1.1.0",
     "promised-exec": "^1.0.1",
     "semver": "^5.1.0",
+    "shelljs": "^0.7.0",
     "yargs": "^3.31.0"
+  },
+  "devDependencies": {
+    "git-url-parse": "^6.0.3"
   }
 }
