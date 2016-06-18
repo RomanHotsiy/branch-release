@@ -86,8 +86,7 @@ function buildAndPublish(version) {
   if (GH_TOKEN) {
     let remoteUrl = exec('git config --get remote.origin.url', {silent: true}).stdout.trim();
     let remoteObj = GitUrlParse(remoteUrl);
-    remoteObj.token = GH_TOKEN;
-    remote = GitUrlParse.stringify(remoteObj, 'https');
+    remote = `https://${GH_TOKEN}@github.com${remoteObj.pathname}`;
   }
   safeExec(`git push ${remote} ${RELEASES_BRANCH}:${RELEASES_BRANCH}`);
   safeExec(`git push ${remote} --tags`);
