@@ -76,7 +76,7 @@ function checkoutAndPull() {
 
 function buildAndPublish(version) {
   checkoutAndPull();
-  exec('git merge -s theirs @{-1}');
+  exec('git merge -X theirs @{-1}');
   exec(`npm run-script ${BUILD_SCRIPT}`);
   exec(`git add ${DIST_DIR} -f`);
   const commitMessage = COMMIT_MESSAGE.replace('%ver%', version);
