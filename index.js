@@ -80,7 +80,7 @@ function buildAndPublish(version) {
   exec(`npm run-script ${BUILD_SCRIPT}`);
   exec(`git add ${DIST_DIR} -f`);
   const commitMessage = COMMIT_MESSAGE.replace('%ver%', version);
-  exec(`git commit -m "${commitMessage}"`);
+  exec(`git commit -m "${commitMessage}" --allow-empty`);
   exec(`git tag v${version}`);
   let remote = 'origin';
   if (GH_TOKEN) {
